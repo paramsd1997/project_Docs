@@ -1,0 +1,59 @@
+              main.tf 
+              
+              resource "aws_instance" "ec222" {
+   
+  ami              =  var.ami
+
+  instance_type    =  var.instance
+
+  subnet_id        =  data.aws_subnet.selected.id
+
+  security_groups =  [data.aws_security_group.sg.id]
+
+  key_name        =  var.key_name
+  
+  count           =  var.count_no
+
+  tags            =   {
+ 
+  Name            = "jenkin_master"
+}
+
+root_block_device    {
+  
+ volume_size     =  "30"
+
+  volume_type    =  "gp2"
+
+  encrypted      =  true
+
+  delete_on_termination  = true
+}
+
+}
+
+
+
+
+
+
+
+
+
+
+                         data.tf  // for using the exitsting resources we use data block 
+                         
+data "aws_subnet" "selected" {
+   filter {
+    name   = "tag:Name" // filter the the existing resource according to tag name 
+    values = [var.subnet_name] // subnet name should be present their for filltering
+  }
+}
+data "aws_security_group" "sg" {
+   filter {
+    name   = "tag:Name"
+    values = [var.security_group]
+  }
+}
+
+
