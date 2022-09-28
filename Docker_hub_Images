@@ -1,0 +1,28 @@
+docker tag bookmyslot-tag-service param036/capstone:bookmyslot-tag-service 
+docker tag bookmyslot-user-service param036/capstone:bookmyslot-user-service
+docker tag bookmyslot-config-server param036/capstone:bookmyslot-config-server 
+docker tag bookmyslot-interviewer-service param036/capstone:bookmyslot-interviewer-service 
+docker tag bookmyslot-email-service param036/capstone:bookmyslot-email-service 
+docker tag bookmyslot-eureka-server param036/capstone:bookmyslot-eureka-server
+docker tag product-webapp param036/capstone:product-webapp
+docker tag mysql param036/capstone:mysql
+docker tag mongo param036/capstone:mongo
+docker tag rabbitmq:3-management param036/capstone:rabbitmq
+docker tag bookmyslot-authentication-service param036/capstone:bookmyslot-authentication-service 
+docker tag bookmyslot-api-gateway param036/capstone:bookmyslot-api-gateway
+
+
+
+docker push param036/capstone:bookmyslot-tag-service 
+docker push param036/capstone:bookmyslot-user-service 
+docker push param036/capstone:bookmyslot-email-service 
+docker push param036/capstone:bookmyslot-config-server 
+docker push param036/capstone:bookmyslot-interviewer-service 
+docker push param036/capstone:bookmyslot-product-webapp
+docker push param036/capstone:mysql
+docker push param036/capstone:mongo
+docker push param036/capstone:rabbitmq 
+docker push param036/capstone:bookmyslot-api-gateway
+docker push param036/capstone:bookmyslot-authentication-service  
+docker push param036/capstone:bookmyslot-api-gateway
+
