@@ -1,0 +1,178 @@
+﻿
+
+https://github.com/networknuts/ansible-k8s-setup 
+
+
+[root@ansible ansible-k8s-setup]# ls 
+ansible.cfg  hosts  k8s-master.yml  k8s-pkg.yml  k8s-workers.yml  README.md 
+[root@ansible ansible-k8s-setup]# cat hosts 
+[masters] 
+master.example.com 
+
+[workers] 
+172.31.83.42 
+172.31.91.136 
+[root@ansible ansible-k8s-setup]# cat /etc/hosts 
+127.0.0.1   localhost localhost.localdomain localhost4 localhost4.localdomain4 
+::1         localhost6 localhost6.localdomain6 
+
+172.31.82.82 ansible 
+172.31.2.10 master.example.com master 
+172.31.83.42 node1 
+172.31.91.136 node2 
+[root@ansible ansible-k8s-setup]# inventory      = /root/ansible-k8s-setup/hosts 
+bash: inventory: command not found 
+[root@ansible ansible-k8s-setup]# ### Entry in ansible.cfg 
+
+
+vi k8s-pkg.yml 
+
+[root@ansible ansible-k8s-setup]# cat k8s-pkg.yml 
+- hosts: all 
+  become: yes 
+  tasks: 
+
+    # - name: disable firewall service for labs 
+    # service: 
+    #  name: firewalld 
+    #  state: stopped 
+    #  enabled: false 
+
+   - name: Disable SWAP 
+     shell: | 
+       swapoff -a 
+
+   - name: Disable SWAP in fstab 
+     lineinfile: 
+       path: /etc/fstab 
+       regexp: 'swap' 
+       state: absent 
+
+   - name: install Docker 
+     yum: 
+       name: docker 
+       state: present 
+       update_cache: true 
+
+   - name: start Docker 
+     service: 
+       name: docker 
+       state: started 
+       enabled: true 
+
+   - name: disable SELinux 
+     command: setenforce 0 
+     ignore_errors: yes 
+ 
+     #- name: disable SELinux on reboot 
+     #selinux: 
+     #  state: disabled 
+
+   - name: ensure net.bridge.bridge-nf-call-ip6tables is set to 1 
+     sysctl: 
+      name: net.bridge.bridge-nf-call-ip6tables 
+      value: 1 
+      state: present 
+
+   - name: ensure net.bridge.bridge-nf-call-iptables is set to 1 
+     sysctl: 
+      name: net.bridge.bridge-nf-call-iptables 
+      value: 1 
+      state: present 
+
+   - name: add Kubernetes YUM repository 
+     yum_repository: 
+      name: Kubernetes 
+      description: Kubernetes YUM repository 
+      baseurl: https://packages.cloud.google.com/yum/repos/kubernetes-el7-x86_64 
+      gpgkey: https://packages.cloud.google.com/yum/doc/yum-key.gpg https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg 
+      gpgcheck: yes 
+
+   - name: install kubelet 
+     yum: 
+        name: kubelet-1.14.0 
+        state: present 
+        update_cache: true 
+
+   - name: install kubeadm 
+     yum: 
+        name: kubeadm-1.14.0 
+        state: present 
+
+   - name: start kubelet 
+     service: 
+       name: kubelet 
+       enabled: yes 
+       state: started 
+
+- hosts: masters 
+  become: yes 
+  tasks: 
+   - name: install kubectl 
+     yum: 
+        name: kubectl-1.14.0 
+        state: present 
+        allow_downgrade: yes 
+
+        #- hosts: all 
+        #  become: yes 
+        #  tasks: 
+        #   - name: reboot ALL machines 
+        #     reboot: 
+
+
+
+vi k8s-workers.yml 
+
+
+
+- hosts: masters 
+  become: yes 
+  gather_facts: false 
+  tasks: 
+    - name: get join command 
+      shell: kubeadm token create --print-join-command 
+      register: join_command_raw 
+
+    - name: set join command 
+      set_fact: 
+        join_command: "{{ join_command_raw.stdout_lines[0] }}" 
+
+
+- hosts: workers 
+  become: yes 
+  tasks: 
+    - name: join cluster 
+      shell: "{{ hostvars['master.example.com'].join_command }} --ignore-preflight-errors all  >> node_joined.txt" 
+      args: 
+        chdir: $HOME 
+        creates: node_joined.txt 
+
+vi k8s-master.yml 
+
+- hosts: masters 
+  become: yes 
+  tasks: 
+    - name: initialize K8S cluster 
+      shell: kubeadm init --pod-network-cidr=172.16.0.0/16 ##--apiserver-advertise-address=10.0.0.100 
+
+    - name: create .kube directory 
+      file: 
+        path: $HOME/.kube 
+        state: directory 
+        mode: 0755 
+
+    - name: copy admin.conf to user kube config 
+      copy: 
+        src: /etc/kubernetes/admin.conf 
+        dest: /root/.kube/config 
+        remote_src: yes 
+
+    - name: install Pod network 
+      become: yes 
+      shell: kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/a70459be0084506e4ec919aa1c114638878db11b/Documentation/kube-flannel.yml >> pod_network_setup.txt 
+      args: 
+        chdir: $HOME 
+        creates: pod_network_setup.txt 
+
+
