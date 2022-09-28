@@ -2,9 +2,15 @@
 
 https://github.com/networknuts/ansible-k8s-setup 
 
+# In Ansible Uncomment the Inventory line from
+
+vi /etc/ansible/ansibe.conf
 
 [root@ansible ansible-k8s-setup]# ls 
-ansible.cfg  hosts  k8s-master.yml  k8s-pkg.yml  k8s-workers.yml  README.md 
+
+ansible.cfg  hosts  k8s-master.yml  k8s-pkg.yml  k8s-workers.yml  README.md
+
+
 [root@ansible ansible-k8s-setup]# cat hosts 
 [masters] 
 master.example.com 
@@ -12,20 +18,27 @@ master.example.com
 [workers] 
 172.31.83.42 
 172.31.91.136 
-[root@ansible ansible-k8s-setup]# cat /etc/hosts 
+
+
+[root@ansible ansible-k8s-setup]# cat /etc/hosts   // set pvt ip with hostname setted through the hostnamectl set-hostname cmd
+
 127.0.0.1   localhost localhost.localdomain localhost4 localhost4.localdomain4 
 ::1         localhost6 localhost6.localdomain6 
+
+
 
 172.31.82.82 ansible 
 172.31.2.10 master.example.com master 
 172.31.83.42 node1 
 172.31.91.136 node2 
-[root@ansible ansible-k8s-setup]# inventory      = /root/ansible-k8s-setup/hosts 
-bash: inventory: command not found 
-[root@ansible ansible-k8s-setup]# ### Entry in ansible.cfg 
 
 
-vi k8s-pkg.yml 
+[root@ansible ansible-k8s-setup]# inventory      
+
+## Entry in ansible.cfg 
+
+
+ vi k8s-pkg.yml 
 
 [root@ansible ansible-k8s-setup]# cat k8s-pkg.yml 
 - hosts: all 
@@ -122,11 +135,11 @@ vi k8s-pkg.yml
 
 
 
-vi k8s-workers.yml 
+                                            vi k8s-workers.yml  // For Install the req packages into the Workers Nodes and masters to form cluster
 
 
-
-- hosts: masters 
+---
+- hosts: masters // master node group which is mentioned in the hosts file 
   become: yes 
   gather_facts: false 
   tasks: 
@@ -139,7 +152,7 @@ vi k8s-workers.yml
         join_command: "{{ join_command_raw.stdout_lines[0] }}" 
 
 
-- hosts: workers 
+- hosts: workers    // workers nodes group -name mentioned in the hosts file 
   become: yes 
   tasks: 
     - name: join cluster 
@@ -148,8 +161,11 @@ vi k8s-workers.yml
         chdir: $HOME 
         creates: node_joined.txt 
 
-vi k8s-master.yml 
 
+
+                                                  vi k8s-master.yml  // installing the required repo & packages in the master to form cluster
+
+---
 - hosts: masters 
   become: yes 
   tasks: 
